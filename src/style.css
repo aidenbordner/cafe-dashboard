@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #0d0d0d;
+  color: white;
+  font-family: "Rubik", sans-serif;
+}
+
+select option {
+  background-color: #1a1037;
+  color: white;
+}

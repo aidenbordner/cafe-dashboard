@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Café Menu History</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body class="bg-sentry-rich-black text-white font-rubik min-h-screen">
+    <div id="app">
+      <!-- Header -->
+      <header class="bg-sentry-dk-violet border-b border-purple-900/30 px-6 py-4">
+        <div class="max-w-4xl mx-auto flex items-center justify-between">
+          <h1 class="text-xl font-semibold text-white">🍴 Café Menu History</h1>
+          <div class="flex items-center gap-3">
+            <label for="week-select" class="text-sm text-purple-300">Week:</label>
+            <select
+              id="week-select"
+              class="bg-sentry-rich-black border border-purple-800/60 text-white text-sm rounded px-3 py-1.5 focus:outline-none focus:border-sentry-blurple"
+            >
+              <option value="">Loading weeks...</option>
+            </select>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main content -->
+      <main id="content" class="max-w-4xl mx-auto px-6 py-6">
+        <div id="loading" class="flex items-center justify-center py-20 gap-3 text-purple-400">
+          <div class="w-5 h-5 border-2 border-sentry-blurple border-t-transparent rounded-full animate-spin"></div>
+          <span class="text-sm">Loading menu history...</span>
+        </div>
+        <div id="error" class="hidden text-center py-20">
+          <p class="text-red-400 text-sm" id="error-message"></p>
+        </div>
+        <div id="week-content" class="hidden space-y-8"></div>
+        <div id="empty" class="hidden text-center py-20 text-purple-400 text-sm">
+          Select a week to view the menu.
+        </div>
+      </main>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

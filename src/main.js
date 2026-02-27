@@ -1,0 +1,112 @@
+import * as Sentry from "@sentry/browser";
+import { fetchWeeks, fetchWeekHistory } from "./api.js";
+import { renderWeekHistory, populateWeekSelect } from "./render.js";
+// Initialize Sentry
+Sentry.init({
+    dsn: "https://baaa76ff9f1f302f27c438d8c979c6e0@o4510064609591296.ingest.us.sentry.io/4510705133879296",
+    environment: import.meta.env.MODE,
+    tracesSampleRate: 1.0,
+    integrations: [Sentry.browserTracingIntegration()],
+});
+const weekSelect = document.getElementById("week-select");
+const loadingEl = document.getElementById("loading");
+const errorEl = document.getElementById("error");
+const errorMessageEl = document.getElementById("error-message");
+const weekContentEl = document.getElementById("week-content");
+const emptyEl = document.getElementById("empty");
+// Tracks which meal cards are currently expanded
+const expandedIds = new Set();
+function showLoading() {
+    loadingEl.classList.remove("hidden");
+    errorEl.classList.add("hidden");
+    weekContentEl.classList.add("hidden");
+    emptyEl.classList.add("hidden");
+}
+function showError(message) {
+    loadingEl.classList.add("hidden");
+    errorEl.classList.remove("hidden");
+    weekContentEl.classList.add("hidden");
+    emptyEl.classList.add("hidden");
+    errorMessageEl.textContent = message;
+}
+function showContent() {
+    loadingEl.classList.add("hidden");
+    errorEl.classList.add("hidden");
+    weekContentEl.classList.remove("hidden");
+    emptyEl.classList.add("hidden");
+}
+function showEmpty() {
+    loadingEl.classList.add("hidden");
+    errorEl.classList.add("hidden");
+    weekContentEl.classList.add("hidden");
+    emptyEl.classList.remove("hidden");
+}
+async function loadWeek(weekStart) {
+    showLoading();
+    const span = Sentry.startInactiveSpan({
+        name: `Load week ${weekStart}`,
+        op: "ui.action",
+    });
+    try {
+        const data = await fetchWeekHistory(weekStart);
+        renderWeekHistory(weekContentEl, data, expandedIds);
+        showContent();
+        attachExpandListeners();
+        Sentry.addBreadcrumb({ message: `Loaded week ${weekStart}`, category: "navigation" });
+    }
+    catch (err) {
+        const error = err instanceof Error ? err : new Error(String(err));
+        showError(`Failed to load week: ${error.message}`);
+        Sentry.captureException(error);
+    }
+    finally {
+        span.end();
+    }
+}
+function attachExpandListeners() {
+    weekContentEl.querySelectorAll("[data-expand-id]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            const id = btn.getAttribute("data-expand-id");
+            if (expandedIds.has(id)) {
+                expandedIds.delete(id);
+            }
+            else {
+                expandedIds.add(id);
+            }
+            // Re-render with updated expanded state
+            const currentWeek = weekSelect.value;
+            if (currentWeek) {
+                void loadWeek(currentWeek);
+            }
+        });
+    });
+}
+async function init() {
+    try {
+        const weeks = await fetchWeeks();
+        if (weeks.length === 0) {
+            showEmpty();
+            weekSelect.innerHTML = '<option value="">No archived weeks</option>';
+            return;
+        }
+        populateWeekSelect(weekSelect, weeks, weeks[0]);
+        weekSelect.addEventListener("change", () => {
+            const selected = weekSelect.value;
+            if (selected) {
+                expandedIds.clear();
+                void loadWeek(selected);
+            }
+            else {
+                showEmpty();
+            }
+        });
+        // Load the most recent week by default
+        await loadWeek(weeks[0]);
+    }
+    catch (err) {
+        const error = err instanceof Error ? err : new Error(String(err));
+        showError(`Failed to load week list: ${error.message}`);
+        Sentry.captureException(error);
+    }
+}
+void init();

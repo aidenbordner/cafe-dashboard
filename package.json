@@ -1,0 +1,22 @@
+{
+  "name": "cafe-dashboard",
+  "version": "1.0.0",
+  "description": "Read-only history dashboard for Sentry Cafe menus",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@sentry/browser": "^9.0.0"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.15",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3"
+  }
+}
