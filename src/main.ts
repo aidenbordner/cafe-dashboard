@@ -4,7 +4,7 @@ import { renderWeekHistory, populateWeekSelect } from "./render.js";
 
 // Initialize Sentry
 Sentry.init({
-  dsn: "https://baaa76ff9f1f302f27c438d8c979c6e0@o4510064609591296.ingest.us.sentry.io/4510705133879296",
+  dsn: "https://fb56b72a2efa33e69fa44b6069cbeb52@o4510064609591296.ingest.us.sentry.io/4510959478112256",
   environment: import.meta.env.MODE,
   tracesSampleRate: 1.0,
   integrations: [Sentry.browserTracingIntegration()],
