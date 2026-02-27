@@ -4,3 +4,9 @@
 
 [build.environment]
   NODE_VERSION = "20"
+
+# Required for Sentry browser profiling (JS Self-Profiling API)
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Document-Policy = "js-profiling"

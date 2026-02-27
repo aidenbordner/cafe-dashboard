@@ -7,7 +7,12 @@ Sentry.init({
   dsn: "https://fb56b72a2efa33e69fa44b6069cbeb52@o4510064609591296.ingest.us.sentry.io/4510959478112256",
   environment: import.meta.env.MODE,
   tracesSampleRate: 1.0,
-  integrations: [Sentry.browserTracingIntegration()],
+  profileSessionSampleRate: 1.0,
+  enableLogs: true,
+  integrations: [
+    Sentry.browserTracingIntegration(),
+    Sentry.browserProfilingIntegration(),
+  ],
 });
 
 const weekSelect = document.getElementById("week-select") as HTMLSelectElement;
@@ -51,15 +56,18 @@ function showEmpty(): void {
 
 async function loadWeek(weekStart: string): Promise<void> {
   showLoading();
+  Sentry.logger.info(`Loading week ${weekStart}`);
   await Sentry.startSpan({ name: `Load week ${weekStart}`, op: "ui.action" }, async () => {
     try {
       const data = await fetchWeekHistory(weekStart);
       renderWeekHistory(weekContentEl, data, expandedIds);
       showContent();
       attachExpandListeners();
+      Sentry.logger.info(`Week loaded successfully`, { weekStart });
       Sentry.addBreadcrumb({ message: `Loaded week ${weekStart}`, category: "navigation" });
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
+      Sentry.logger.error(`Failed to load week`, { weekStart, error: error.message });
       showError(`Failed to load week: ${error.message}`);
       Sentry.captureException(error);
     }
@@ -86,6 +94,7 @@ function attachExpandListeners(): void {
 
 async function init(): Promise<void> {
   try {
+    Sentry.logger.info("Initializing dashboard");
     const weeks = await fetchWeeks();
 
     if (weeks.length === 0) {
@@ -110,6 +119,7 @@ async function init(): Promise<void> {
     await loadWeek(weeks[0]);
   } catch (err) {
     const error = err instanceof Error ? err : new Error(String(err));
+    Sentry.logger.error("Failed to initialize dashboard", { error: error.message });
     showError(`Failed to load week list: ${error.message}`);
     Sentry.captureException(error);
   }
