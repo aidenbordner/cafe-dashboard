@@ -1,6 +1,7 @@
 import * as Sentry from "@sentry/browser";
 import { fetchWeeks, fetchWeekHistory } from "./api.js";
-import { renderWeekHistory, populateWeekSelect } from "./render.js";
+import type { HistoryResponse, ViewState } from "./types.js";
+import { renderOverview, renderDetail, populateWeekSelect } from "./render.js";
 
 // Initialize Sentry
 Sentry.init({
@@ -22,8 +23,8 @@ const errorMessageEl = document.getElementById("error-message") as HTMLElement;
 const weekContentEl = document.getElementById("week-content") as HTMLElement;
 const emptyEl = document.getElementById("empty") as HTMLElement;
 
-// Tracks which meal cards are currently expanded
-const expandedIds = new Set<string>();
+let currentView: ViewState = { page: "overview" };
+let cachedData: HistoryResponse | null = null;
 
 function showLoading(): void {
   loadingEl.classList.remove("hidden");
@@ -54,15 +55,24 @@ function showEmpty(): void {
   emptyEl.classList.remove("hidden");
 }
 
+function renderCurrentView(): void {
+  if (!cachedData) return;
+  if (currentView.page === "detail") {
+    renderDetail(weekContentEl, cachedData, currentView.date, currentView.mealType);
+  } else {
+    renderOverview(weekContentEl, cachedData);
+  }
+  showContent();
+}
+
 async function loadWeek(weekStart: string): Promise<void> {
   showLoading();
   Sentry.logger.info(`Loading week ${weekStart}`);
   await Sentry.startSpan({ name: `Load week ${weekStart}`, op: "ui.action" }, async () => {
     try {
-      const data = await fetchWeekHistory(weekStart);
-      renderWeekHistory(weekContentEl, data, expandedIds);
-      showContent();
-      attachExpandListeners();
+      cachedData = await fetchWeekHistory(weekStart);
+      currentView = { page: "overview" };
+      renderCurrentView();
       Sentry.logger.info(`Week loaded successfully`, { weekStart });
       Sentry.addBreadcrumb({ message: `Loaded week ${weekStart}`, category: "navigation" });
     } catch (err) {
@@ -74,23 +84,28 @@ async function loadWeek(weekStart: string): Promise<void> {
   });
 }
 
-function attachExpandListeners(): void {
-  weekContentEl.querySelectorAll<HTMLButtonElement>("[data-expand-id]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const id = btn.getAttribute("data-expand-id")!;
-      if (expandedIds.has(id)) {
-        expandedIds.delete(id);
-      } else {
-        expandedIds.add(id);
-      }
-      // Re-render with updated expanded state
-      const currentWeek = weekSelect.value;
-      if (currentWeek) {
-        void loadWeek(currentWeek);
-      }
-    });
-  });
-}
+// Event delegation for navigation
+weekContentEl.addEventListener("click", (e) => {
+  const target = e.target as HTMLElement;
+
+  // Back button
+  const backBtn = target.closest("[data-action='back']");
+  if (backBtn) {
+    currentView = { page: "overview" };
+    renderCurrentView();
+    return;
+  }
+
+  // Meal card click → navigate to detail
+  const card = target.closest<HTMLElement>("[data-meal-date]");
+  if (card) {
+    const date = card.getAttribute("data-meal-date")!;
+    const mealType = card.getAttribute("data-meal-type") as "breakfast" | "lunch" | "happyHour";
+    currentView = { page: "detail", date, mealType };
+    renderCurrentView();
+    Sentry.addBreadcrumb({ message: `Navigated to ${mealType} on ${date}`, category: "navigation" });
+  }
+});
 
 async function init(): Promise<void> {
   try {
@@ -108,7 +123,6 @@ async function init(): Promise<void> {
     weekSelect.addEventListener("change", () => {
       const selected = weekSelect.value;
       if (selected) {
-        expandedIds.clear();
         void loadWeek(selected);
       } else {
         showEmpty();

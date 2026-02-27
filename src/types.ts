@@ -46,3 +46,7 @@ export interface HistoryResponse {
   ratings: Record<string, Record<string, MealRating>>;
   comments: Record<string, Record<string, HistoryComment[]>>;
 }
+
+export type ViewState =
+  | { page: "overview" }
+  | { page: "detail"; date: string; mealType: "breakfast" | "lunch" | "happyHour" };
