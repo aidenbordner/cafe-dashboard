@@ -51,25 +51,19 @@ function showEmpty(): void {
 
 async function loadWeek(weekStart: string): Promise<void> {
   showLoading();
-
-  const span = Sentry.startInactiveSpan({
-    name: `Load week ${weekStart}`,
-    op: "ui.action",
+  await Sentry.startSpan({ name: `Load week ${weekStart}`, op: "ui.action" }, async () => {
+    try {
+      const data = await fetchWeekHistory(weekStart);
+      renderWeekHistory(weekContentEl, data, expandedIds);
+      showContent();
+      attachExpandListeners();
+      Sentry.addBreadcrumb({ message: `Loaded week ${weekStart}`, category: "navigation" });
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      showError(`Failed to load week: ${error.message}`);
+      Sentry.captureException(error);
+    }
   });
-
-  try {
-    const data = await fetchWeekHistory(weekStart);
-    renderWeekHistory(weekContentEl, data, expandedIds);
-    showContent();
-    attachExpandListeners();
-    Sentry.addBreadcrumb({ message: `Loaded week ${weekStart}`, category: "navigation" });
-  } catch (err) {
-    const error = err instanceof Error ? err : new Error(String(err));
-    showError(`Failed to load week: ${error.message}`);
-    Sentry.captureException(error);
-  } finally {
-    span.end();
-  }
 }
 
 function attachExpandListeners(): void {
